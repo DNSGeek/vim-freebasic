@@ -1,2 +1,2 @@
-au BufNewFile,BufRead *.fb set filetype=freebasic
-au BufNewFile,BufRead *.bi set filetype=freebasic
+au BufNewFile,BufRead *.fb setfiletype freebasic
+au BufNewFile,BufRead *.bi setfiletype freebasic
