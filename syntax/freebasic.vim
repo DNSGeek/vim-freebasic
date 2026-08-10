@@ -1,234 +1,287 @@
 " Vim syntax file
-" Language: FreeBASIC
-" Latest Revision: 17 Jan 2026
+" Language:     FreeBASIC
+" Maintainer:   Thomas Knox
+" Last Change:  2026 Aug 09
+"
+" Generated:    by scripts/generateFreebasicSyntax.js - do not edit by hand
+" Source:      FreeBASIC Manual (wiki export, 2023-12-24), 502 keywords
+" Vocabulary is taken from the manual KeyPg pages and grouped by its own
+" CatPg category pages, so no invented keywords can appear here.
 
 if exists("b:current_syntax")
-    finish
+  finish
 endif
 
-let b:current_syntax = "freebasic"
-
 syn case ignore
-"
-"	This list of keywords is taken directly from the FreeBasic
-"	user's guide as presented by the FreeBasic online site.
-"
-syn keyword	freebasicArrays			ERASE LBOUND REDIM PRESERVE UBOUND
 
-syn keyword	freebasicBitManipulation	BIT BITRESET BITSET HIBYTE HIWORD LOBYTE LOWORD SHL SHR
+" FreeBASIC keeps the QB type suffixes ($ % ! # &) on the classic string
+" functions, so LEFT$ and MID$ must be single syntax words. 'syn iskeyword'
+" scopes this to syntax matching, leaving 'w' motions and the user's own
+" 'iskeyword' alone.
+if has('patch-7.4.1142')
+  syn iskeyword @,48-57,_,36
+else
+  setlocal iskeyword+=36
+endif
 
-syn keyword	freebasicCompilerSwitches	DEFBYTE DEFDBL DEFINT DEFLNG DEFLNGINT DEFSHORT DEFSNG DEFSTR
-syn keyword	freebasicCompilerSwitches	DEFUBYTE DEFUINT DEFULNGINT DEFUSHORT
-syn match	freebasicCompilerSwitches	"\<option\s+\(BASE\|BYVAL\|DYNAMIC\|ESCAPE\|EXPLICIT\|NOKEYWORD\)\>"
-syn match	freebasicCompilerSwitches	"\<option\s+\(PRIVATE\|STATIC\)\>"
+" ---------------------------------------------------------------- comments
+" FreeBASIC has three comment forms: ' to end of line, REM to end of line,
+" and the /' ... '/ block comment, which nests.
+syn keyword freebasicTodo contained TODO FIXME XXX NOTE HACK
 
-syn region	freebasicConditional		start="\son\s+" skip=".*" end="gosub"
-syn region	freebasicConditional		start="\son\s+" skip=".*" end="goto"
-syn match	freebasicConditional		"\<select\s+case\>"
-syn keyword	freebasicConditional		if iif then case else elseif with
+syn match  freebasicComment "'.*$" contains=freebasicTodo
+syn match  freebasicComment "\<rem\>.*$" contains=freebasicTodo
+syn region freebasicComment start="/'" end="'/" contains=freebasicTodo,freebasicComment
 
-syn match	freebasicConsole		"\<open\s+\(CONS\|ERR\|PIPE\|SCRN\)\>"
-syn keyword	freebasicConsole		BEEP CLS CSRLIN LOCATE PRINT POS SPC TAB VIEW WIDTH
+" ---------------------------------------------------------------- strings
+" A quote inside a string is written "" unless -lang allows escapes, in which
+" case a leading ! enables backslash escapes.
+syn match  freebasicSpecial contained +\\\%(\x\+\|&h\x\+\|[0-7]\+\|[abefnrtv\\"'?]\)+
+syn region freebasicString start=+!\="+ skip=+""+ end=+"+ oneline
+  \ contains=freebasicSpecial,freebasicTodo
 
-syn keyword	freebasicDataTypes		BYTE AS DIM CONST DOUBLE ENUM INTEGER LONG LONGINT SHARED SHORT STRING
-syn keyword	freebasicDataTypes		SINGLE TYPE UBYTE UINTEGER ULONGINT UNION UNSIGNED USHORT WSTRING ZSTRING
+" ---------------------------------------------------------------- numbers
+" Radix prefixes, with an error variant for out-of-range digits. The error
+" rules are defined after the valid ones so they win at the same position.
+syn match freebasicHex     "&[hH]\x\+\%(u\|l\|ul\|ll\|ull\)\=\>"
+syn match freebasicOctal   "&[oO][0-7]\+\%(u\|l\|ul\|ll\|ull\)\=\>"
+syn match freebasicBinary  "&[bB][01]\+\%(u\|l\|ul\|ll\|ull\)\=\>"
+syn match freebasicNumberError "&[hH]\x*[g-zG-Z]\+"
+syn match freebasicNumberError "&[oO][0-7]*[89a-zA-Z]\+"
+syn match freebasicNumberError "&[bB][01]*[2-9a-zA-Z]\+"
 
-syn keyword	freebasicDateTime		DATE DATEADD DATEDIFF DATEPART DATESERIAL DATEVALUE DAY HOUR MINUTE
-syn keyword	freebasicDateTime		MONTH MONTHNAME NOW SECOND SETDATE SETTIME TIME TIMESERIAL TIMEVALUE
-syn keyword	freebasicDateTime		TIMER YEAR WEEKDAY WEEKDAYNAME
+syn match freebasicInteger "\<\d\+\%(u\|l\|ul\|ll\|ull\)\=\>"
+syn match freebasicFloat   "\<\d\+\.\d*\%([eEdD][-+]\=\d\+\)\=[fFdD]\="
+syn match freebasicFloat   "\.\d\+\%([eEdD][-+]\=\d\+\)\=[fFdD]\=\>"
+syn match freebasicFloat   "\<\d\+[eEdD][-+]\=\d\+[fFdD]\=\>"
 
-syn keyword	freebasicDebug			ASSERT STOP
+" A file number as used by OPEN, PRINT #, GET # and friends.
+syn match freebasicFilenumber "#\d\+"
 
-syn keyword	freebasicErrorHandling		ERR ERL ERROR LOCAL RESUME
-syn match	freebasicErrorHandling		"\<resume\s+next\>"
-syn match	freebasicErrorHandling		"\<on\s+error\>"
+" ----------------------------------------------------------- preprocessor
+" '\<' asserts a boundary before a word character, so it can never precede
+" '#' or '$'. These rules anchor on optional leading whitespace instead.
+syn match freebasicInclude "^\s*#\s*\%(include\|inclib\)\>"
+syn match freebasicInclude "^\s*\$\s*\%(include\|inclib\|lang\)\>"
 
-syn match	freebasicFiles			"\<get\s+#\>"
-syn match	freebasicFiles			"\<input\s+#\>"
-syn match	freebasicFiles			"\<line\s+input\s+#\>"
-syn match	freebasicFiles			"\<put\s+#\>"
-syn keyword	freebasicFiles			ACCESS APPEND BINARY BLOAD BSAVE CLOSE EOF FREEFILE INPUT LOC
-syn keyword	freebasicFiles			LOCK LOF OPEN OUTPUT RANDOM RESET SEEK UNLOCK WRITE
+syn match freebasicPreProcessor "^\s*#\s*\%(define\|undef\|macro\|endmacro\)\>"
+syn match freebasicPreProcessor "^\s*#\s*\%(if\|ifdef\|ifndef\|elseif\|else\|endif\)\>"
+syn match freebasicPreProcessor "^\s*#\s*\%(error\|print\|assert\)\>"
+syn match freebasicPreProcessor "^\s*#\s*\%(lang\|libpath\|pragma\|cmdline\)\>"
+syn match freebasicPreProcessor "^\s*#\s*\%(dynamic\|static\|once\)\>"
 
-syn keyword	freebasicFunctions		ALIAS ANY BYREF BYVAL CALL CDECL CONSTRUCTOR DESTRUCTOR
-syn keyword	freebasicFunctions		DECLARE FUNCTION LIB OVERLOAD PASCAL STATIC SUB STDCALL
-syn keyword	freebasicFunctions		VA_ARG VA_FIRST VA_NEXT
 
-syn match	freebasicGraphics		"\<palette\s+get\>"
-syn keyword	freebasicGraphics		ALPHA CIRCLE CLS COLOR CUSTOM DRAW FLIP GET
-syn keyword	freebasicGraphics		IMAGECREATE IMAGEDESTROY LINE PAINT PALETTE PCOPY PMAP POINT
-syn keyword	freebasicGraphics		PRESET PSET PUT RGB RGBA SCREEN SCREENCOPY SCREENINFO SCREENLIST
-syn keyword	freebasicGraphics		SCREENLOCK SCREENPTR SCREENRES SCREENSET SCREENSYNC SCREENUNLOCK
-syn keyword	freebasicGraphics		TRANS USING VIEW WINDOW
+" conditional
+syn keyword freebasicConditional CASE ELSE ELSEIF IF IIF SELECT THEN WITH
 
-syn match	freebasicHardware		"\<open\s+com\>"
-syn keyword	freebasicHardware		INP OUT WAIT LPT LPOS LPRINT
+" loops
+syn keyword freebasicLoops CONTINUE DO FOR LOOP NEXT STEP UNTIL WEND WHILE
 
-syn keyword	freebasicLogical		AND EQV IMP OR NOT XOR
+" control flow
+syn keyword freebasicProgramFlow EXIT GOSUB GOTO RETURN SLEEP
 
-syn keyword	freebasicMath			ABS ACOS ASIN ATAN2 ATN COS EXP FIX INT LOG MOD RANDOMIZE
-syn keyword	freebasicMath			RND SGN SIN SQR TAN
+" error handling
+syn keyword freebasicErrorHandling ASSERT ASSERTWARN ERFN ERL ERMN ERR LOCAL RESUME
 
-syn keyword	freebasicMemory			ALLOCATE CALLOCATE CLEAR DEALLOCATE FIELD FRE PEEK POKE REALLOCATE
+" debugging
+syn keyword freebasicDebug STOP
 
-syn keyword	freebasicMisc			ASM DATA LET TO READ RESTORE SIZEOF SWAP OFFSETOF
+" data types
+syn keyword freebasicDataTypes ALIAS BOOLEAN BYTE CONST CONSTRUCTOR DECLARE DEFINED DESTRUCTOR
+syn keyword freebasicDataTypes DIM DOUBLE END ENUM FBARRAY FIELD FUNCTION INTEGER LONG LONGINT
+syn keyword freebasicDataTypes POINT POINTER PRIVATE PUBLIC SCOPE SHARED SHORT SINGLE STATIC SUB
+syn keyword freebasicDataTypes TYPE UBYTE UINTEGER ULONG ULONGINT UNION UNSIGNED USHORT VAR
+syn keyword freebasicDataTypes WSTRING ZSTRING
 
-syn keyword	freebasicModularizing		CHAIN COMMON EXPORT EXTERN DYLIBFREE DYLIBLOAD DYLIBSYMBOL
-syn keyword	freebasicModularizing		PRIVATE PUBLIC
+" type conversion
+syn keyword freebasicTypeCasting CBOOL CBYTE CDBL CINT CLNG CLNGINT CSHORT CSIGN CSNG CUBYTE CUINT
+syn keyword freebasicTypeCasting CULNG CULNGINT CUNSG CUSHORT STR STRING VAL VALINT VALLNG VALUINT
+syn keyword freebasicTypeCasting VALULNG WSTR
 
-syn keyword	freebasicMultithreading		MUTEXCREATE MUTEXDESTROY MUTEXLOCK MUTEXUNLOCK THREADCREATE THREADWAIT
+" boolean literals
+syn keyword freebasicBoolean FALSE TRUE
 
-syn keyword	freebasicShell			CHDIR DIR COMMAND ENVIRON EXEC EXEPATH KILL NAME MKDIR RMDIR RUN
+" procedures
+syn keyword freebasicFunctions ANY BYREF BYVAL CALL CDECL CVA_ARG CVA_COPY CVA_END CVA_LIST
+syn keyword freebasicFunctions CVA_START EXPORT LIB NAKED OVERLOAD PASCAL STDCALL VA_ARG VA_FIRST
+syn keyword freebasicFunctions VA_NEXT __FASTCALL __THISCALL
 
-syn keyword	freebasicEnviron		SHELL SYSTEM WINDOWTITLE POINTERS
+" object model
+syn keyword freebasicOOP ABSTRACT BASE CLASS EVENT EXTENDS IMPLEMENTS NAMESPACE OBJECT
+syn keyword freebasicOOP OPERATOR OVERRIDE PROPERTY PROTECTED THIS VIRTUAL
 
-syn keyword	freebasicLoops			FOR LOOP WHILE WEND DO CONTINUE STEP UNTIL next
+" arrays
+syn keyword freebasicArrays ARRAYLEN ARRAYSIZE ERASE LBOUND PRESERVE REDIM UBOUND
 
-syn match	freebasicInclude		"\<#\s*\(inclib\|include\)\>"
-syn match	freebasicInclude		"\<\$\s*include\>"
+" modules and linkage
+syn keyword freebasicModularizing COMMON DYLIBFREE DYLIBLOAD DYLIBSYMBOL EXTERN IMPORT
 
-syn keyword	freebasicPointer		PROCPTR PTR SADD STRPTR VARPTR
+" compiler switches
+syn keyword freebasicCompilerSwitches DEFBYTE DEFDBL DEFINT DEFLNG DEFLONGINT DEFSHORT DEFSNG DEFSTR
+syn keyword freebasicCompilerSwitches DEFUBYTE DEFUINT DEFULONGINT DEFUSHORT ESCAPE EXPLICIT NOGOSUB
+syn keyword freebasicCompilerSwitches NOKEYWORD OPTION
 
-syn keyword	freebasicPredefined		__DATE__ __FB_DOS__ __FB_LINUX__ __FB_MAIN__ __FB_MIN_VERSION__
-syn keyword	freebasicPredefined		__FB_SIGNATURE__ __FB_VERSION__ __FB_WIN32__ __FB_VER_MAJOR__
-syn keyword	freebasicPredefined		__FB_VER_MINOR__ __FB_VER_PATCH__ __FILE__ __FUNCTION__
-syn keyword	freebasicPredefined		__LINE__ __TIME__
+" operators
+syn keyword freebasicLogical AND CAST CPTR IS OR XOR
 
-syn match	freebasicPreProcessor		"\<^#\s*\(define\|undef\)\>"
-syn match	freebasicPreProcessor		"\<^#\s*\(ifdef\|ifndef\|else\|elseif\|endif\|if\)\>"
-syn match	freebasicPreProcessor		"\<#\s*error\>"
-syn match	freebasicPreProcessor		"\<#\s*\(print\|dynamic\|static\)\>"
-syn keyword	freebasicPreProcessor		DEFINED ONCE
+" statements
+syn keyword freebasicMisc ASM DATA LET OFFSETOF READ RESTORE SIZEOF SWAP TO TYPEOF USING
 
-syn keyword	freebasicProgramFlow		END EXIT GOSUB GOTO
-syn keyword	freebasicProgramFlow		IS RETURN SCOPE SLEEP
+" console
+syn keyword freebasicConsole BEEP CLS COLOR CSRLIN LOCATE OUTPUT POS SCREEN SPC TAB VIEW WIDTH
+syn keyword freebasicConsole WRITE
 
-syn keyword	freebasicString			INSTR LCASE LEFT LEN LSET LTRIM MID RIGHT RSET RTRIM
-syn keyword	freebasicString			SPACE STRING TRIM UCASE ASC BIN CHR CVD CVI CVL CVLONGINT
-syn keyword	freebasicString			CVS CVSHORT FORMAT HEX MKD MKI MKL MKLONGINT MKS MKSHORT
-syn keyword	freebasicString			OCT STR VAL VALLNG VALINT VALUINT VALULNG
+" file i/o
+syn keyword freebasicFiles APPEND BINARY CLOSE COM CONS ENCODING EOF FREEFILE INPUT LOC LOCK
+syn keyword freebasicFiles LOF OPEN PIPE PUT RESET SCRN SEEK UNLOCK WINPUT
 
-syn keyword	freebasicTypeCasting		CAST CBYTE CDBL CINT CLNG CLNGINT CPTR CSHORT CSIGN CSNG
-syn keyword	freebasicTypeCasting		CUBYTE CUINT CULNGINT CUNSG CURDIR CUSHORT
+" user input
+syn keyword freebasicUserInput GETJOYSTICK GETKEY GETMOUSE INKEY MULTIKEY SETMOUSE
 
-syn match	freebasicUserInput		"\<line\s+input\>"
-syn keyword	freebasicUserInput		GETJOYSTICK GETKEY GETMOUSE INKEY INPUT MULTIKEY SETMOUSE
-"
-"	Do the Basic variables names first.  This is because it
-"	is the most inclusive of the tests.  Later on we change
-"	this so the identifiers are split up into the various
-"	types of identifiers like functions, basic commands and
-"	such. MEM 9/9/2006
-"
-syn match	freebasicIdentifier			"\<[a-zA-Z_][a-zA-Z0-9_]*\>"
-syn match	freebasicGenericFunction	"\<[a-zA-Z_][a-zA-Z0-9_]*\>\s*("me=e-1,he=e-1
-"
-"	Function list
-"
-syn keyword	freebasicTodo		contained TODO
-"
-"	Catch errors caused by wrong parenthesis
-"
-syn region	freebasicParen		transparent start='(' end=')' contains=ALLBUT,@freebasicParenGroup
-syn match	freebasicParenError	")"
-syn match	freebasicInParen	contained "[{}]"
-syn cluster	freebasicParenGroup	contains=freebasicParenError,freebasicSpecial,freebasicTodo,freebasicUserCont,freebasicUserLabel,freebasicBitField
-"
-"	Integer number, or floating point number without a dot and with "f".
-"
-syn region	freebasicHex			start="&h" end="\W"
-syn region	freebasicHexError		start="&h\x*[g-zG-Z]" end="\W"
-syn region	freebasicOctal			start="&o" end="\W"
-syn region	freebasicOctalError		start="&o[0-7]*[89a-zA-Z]" end="\W"
-syn region	freebasicBinary			start="&b" end="\W"
-syn region	freebasicBinaryError	start="&b[01]*[2-9a-zA-Z]" end="\W"
-syn match	freebasicInteger		"\<\d\+\(u\=l\=\|lu\|f\)\>"
-"
-"	Floating point number, with dot, optional exponent
-"
-syn match	freebasicFloat		"\<\d\+\.\d*\(e[-+]\=\d\+\)\=[fl]\=\>"
-"
-"	Floating point number, starting with a dot, optional exponent
-"
-syn match	freebasicFloat		"\.\d\+\(e[-+]\=\d\+\)\=[fl]\=\>"
-"
-"	Floating point number, without dot, with exponent
-"
-syn match	freebasicFloat		"\<\d\+e[-+]\=\d\+[fl]\=\>"
-"
-"	Octal number
-"
-syn case match
-syn match	freebasicOctal2			"\<0\o*\>"
-syn match	freebasicOctal2Error	"\<0\o*[89a-zA-Z]"
-"
-"	String and Character contstants
-"
-syn region	freebasicString		start='"' end='"' contains=freebasicSpecial,freebasicTodo
-syn region	freebasicString		start="'" end="'" contains=freebasicSpecial,freebasicTodo
-"
-"	Comments
-"
-syn match	freebasicSpecial	contained "\\\\."
-syn region	freebasicComment	start="^rem" end="$" contains=freebasicSpecial,freebasicTodo
-syn region	freebasicComment	start=":\s*rem" end="$" contains=freebasicSpecial,freebasicTodo
-syn region	freebasicComment	start="\s*'" end="$" contains=freebasicSpecial,freebasicTodo
-syn region	freebasicComment	start="^'" end="$" contains=freebasicSpecial,freebasicTodo
-"
-"	Now do the comments and labels
-"
-syn match	freebasicLabel		"^\d"
-syn match	freebasicLabel		"\<^\w+:\>"
-syn region	freebasicLineNumber	start="^\d" end="\s"
-"
-"	Create the clusters
-"
-syn cluster	freebasicNumber		contains=freebasicHex,freebasicOctal,freebasicOctal2,freebasicBinary,freebasicInteger,freebasicFloat
-syn cluster	freebasicError		contains=freebasicHexError,freebasicOctalError,freebasicOctal2,freebasicBinary
-"
-"	Used with OPEN statement
-"
-syn match	freebasicFilenumber		"#\d\+"
-syn match	freebasicMathOperator	"[\+\-\=\|\*\/\>\<\%\()[\]]" contains=freebasicParen
-"
-"	The default methods for highlighting.  Can be overridden later
-"
-hi def link freebasicArrays		StorageClass
-hi def link freebasicBitManipulation	Operator
-hi def link freebasicCompilerSwitches	PreCondit
-hi def link freebasicConsole		Special
-hi def link freebasicDataTypes		Type
-hi def link freebasicDateTime		Type
-hi def link freebasicDebug		Special
-hi def link freebasicErrorHandling	Special
-hi def link freebasicFiles		Special
-hi def link freebasicFunctions		Function
-hi def link freebasicGraphics		Function
-hi def link freebasicHardware		Special
-hi def link freebasicLogical		Conditional
-hi def link freebasicMath		Function
-hi def link freebasicMemory		Function
-hi def link freebasicMisc		Special
-hi def link freebasicModularizing	Special
-hi def link freebasicMultithreading	Special
-hi def link freebasicShell		Special
-hi def link freebasicEnviron		Special
-hi def link freebasicPointer		Special
-hi def link freebasicPredefined		PreProc
-hi def link freebasicPreProcessor	PreProc
-hi def link freebasicProgramFlow	Statement
-hi def link freebasicString		String
-hi def link freebasicTypeCasting	Type
-hi def link freebasicUserInput		Statement
-hi def link freebasicComment		Comment
-hi def link freebasicConditional	Conditional
-hi def link freebasicError		Error
-hi def link freebasicIdentifier		Identifier
-hi def link freebasicInclude		Include
-hi def link freebasicGenericFunction	Function
-hi def link freebasicLabel		Label
-hi def link freebasicLineNumber		Label
-hi def link freebasicMathOperator	Operator
-hi def link freebasicNumber		Number
-hi def link freebasicSpecial		Special
-hi def link freebasicTodo		Todo
+" string functions
+syn keyword freebasicString ASC BIN CHR CVD CVI CVL CVLONGINT CVS CVSHORT FORMAT HEX INSTR
+syn keyword freebasicString INSTRREV LCASE LEFT LEN LSET LTRIM MID MKD MKI MKL MKLONGINT MKS
+syn keyword freebasicString MKSHORT OCT RIGHT RSET RTRIM SPACE TRIM UCASE WBIN WCHR WHEX WOCT
+syn keyword freebasicString WSPACE
+
+" maths
+syn keyword freebasicMath ABS ACOS ASIN ATAN2 ATN COS EXP FIX FRAC INT LOG RANDOM RANDOMIZE
+syn keyword freebasicMath RND SGN SIN SQR TAN
+
+" memory
+syn keyword freebasicMemory ALLOCATE CALLOCATE CLEAR DEALLOCATE FB_MEMCOPY FB_MEMCOPYCLEAR
+syn keyword freebasicMemory FB_MEMMOVE PEEK POKE REALLOCATE
+
+" pointers
+syn keyword freebasicPointer SADD
+
+" bit manipulation
+syn keyword freebasicBitManipulation ACCESS BIT BITRESET BITSET HIBYTE HIWORD LOBYTE LOWORD
+
+" date and time
+syn keyword freebasicDateTime DATE DATEADD DATEDIFF DATEPART DATESERIAL DATEVALUE DAY GET HOUR
+syn keyword freebasicDateTime ISDATE MINUTE MONTH MONTHNAME NOW SECOND SETDATE SETTIME TIMER
+syn keyword freebasicDateTime TIMESERIAL TIMEVALUE WEEKDAY WEEKDAYNAME YEAR
+
+" graphics
+syn keyword freebasicGraphics ADD ALPHA BLOAD BSAVE CIRCLE CUSTOM DRAW FLIP IMAGECONVERTROW
+syn keyword freebasicGraphics IMAGECREATE IMAGEDESTROY IMAGEINFO PAINT PALETTE PCOPY PMAP
+syn keyword freebasicGraphics POINTCOORD PRESET PSET RGB RGBA SCREENCONTROL SCREENCOPY
+syn keyword freebasicGraphics SCREENEVENT SCREENGLPROC SCREENINFO SCREENLIST SCREENLOCK
+syn keyword freebasicGraphics SCREENPTR SCREENRES SCREENSET SCREENSYNC SCREENUNLOCK TRANS WINDOW
+syn keyword freebasicGraphics WINDOWTITLE
+
+" hardware
+syn keyword freebasicHardware INP LPOS LPRINT LPT OUT STICK STRIG WAIT
+
+" threading
+syn keyword freebasicMultithreading CONDBROADCAST CONDCREATE CONDDESTROY CONDSIGNAL CONDWAIT
+syn keyword freebasicMultithreading MUTEXCREATE MUTEXDESTROY MUTEXLOCK MUTEXUNLOCK THREADCALL
+syn keyword freebasicMultithreading THREADCREATE THREADDETACH THREADSELF THREADWAIT
+
+" operating system
+syn keyword freebasicShell CHAIN CHDIR CURDIR DIR ENVIRON EXEC EXEPATH FILEATTR FILECOPY
+syn keyword freebasicShell FILEDATETIME FILEEXISTS FILEFLUSH FILELEN FILESETEOF FRE
+syn keyword freebasicShell ISREDIRECTED KILL MKDIR NAME RMDIR RUN SETENVIRON SHELL
+
+" preprocessor
+syn keyword freebasicPreProcessor DYNAMIC ERROR LINE PRINT TIME
+
+" predefined symbols
+syn keyword freebasicPredefined AS COMMAND SYSTEM __DATE_ISO__ __DATE__ __FB_64BIT__ __FB_ARGC__
+syn keyword freebasicPredefined __FB_ARGV__ __FB_ARG_COUNT__ __FB_ARG_EXTRACT__ __FB_ARG_LEFTOF__
+syn keyword freebasicPredefined __FB_ARG_RIGHTOF__ __FB_ARM__ __FB_ASM__ __FB_BACKEND__
+syn keyword freebasicPredefined __FB_BIGENDIAN__ __FB_BUILD_DATE_ISO__ __FB_BUILD_DATE__
+syn keyword freebasicPredefined __FB_BUILD_SHA1__ __FB_CYGWIN__ __FB_DARWIN__ __FB_DEBUG__
+syn keyword freebasicPredefined __FB_DOS__ __FB_ERR__ __FB_EVAL__ __FB_FPMODE__ __FB_FPU__
+syn keyword freebasicPredefined __FB_FREEBSD__ __FB_GCC__ __FB_GUI__ __FB_IIF__ __FB_JOIN__
+syn keyword freebasicPredefined __FB_LANG__ __FB_LINUX__ __FB_MAIN__ __FB_MIN_VERSION__ __FB_MT__
+syn keyword freebasicPredefined __FB_NETBSD__ __FB_OPENBSD__ __FB_OPTIMIZE__ __FB_OPTION_BYVAL__
+syn keyword freebasicPredefined __FB_OPTION_DYNAMIC__ __FB_OPTION_ESCAPE__ __FB_OPTION_EXPLICIT__
+syn keyword freebasicPredefined __FB_OPTION_GOSUB__ __FB_OPTION_PRIVATE__ __FB_OUT_DLL__
+syn keyword freebasicPredefined __FB_OUT_EXE__ __FB_OUT_LIB__ __FB_OUT_OBJ__ __FB_PCOS__
+syn keyword freebasicPredefined __FB_PPC__ __FB_QUERY_SYMBOL__ __FB_QUOTE__ __FB_SIGNATURE__
+syn keyword freebasicPredefined __FB_SSE__ __FB_UNIQUEID_POP__ __FB_UNIQUEID_PUSH__
+syn keyword freebasicPredefined __FB_UNIQUEID__ __FB_UNIX__ __FB_UNQUOTE__ __FB_VECTORIZE__
+syn keyword freebasicPredefined __FB_VERSION__ __FB_VER_MAJOR__ __FB_VER_MINOR__ __FB_VER_PATCH__
+syn keyword freebasicPredefined __FB_WIN32__ __FB_X86__ __FB_XBOX__ __FILE_NQ__ __FILE__
+syn keyword freebasicPredefined __FUNCTION_NQ__ __FUNCTION__ __LINE__ __PATH__ __TIME__
+
+" QB $-suffixed spellings (-lang qb / fblite)
+syn keyword freebasicQBSuffix BIN$ CHR$ COMMAND$ DATE$ ENVIRON$ HEX$ INKEY$ INPUT$ LCASE$ LEFT$
+syn keyword freebasicQBSuffix LTRIM$ MID$ MKD$ MKI$ MKL$ MKLONGINT$ MKS$ MKSHORT$ OCT$ RIGHT$
+syn keyword freebasicQBSuffix RTRIM$ SPACE$ STR$ STRING$ TIME$ TRIM$ UCASE$
+
+" ------------------------------------------------------------- operators
+syn match freebasicOperator "[-+*/\\\\^<>=&]"
+syn match freebasicOperator "[<>]="
+syn match freebasicOperator "<>"
+syn match freebasicOperator "\\%(+\\|-\\|\\*\\|/\\|\\\\\\|\\^\\|&\\)="
+
+" ------------------------------------------------------------------ labels
+" A label is a bare identifier followed by a colon at the start of a line,
+" or a line number. The previous pattern was "\<^\w+:\>", which cannot match:
+" \< before ^ is meaningless and \w+ is a word character then a literal plus.
+syn match freebasicLabel      "^\s*\w\+\s*:\%([^=]\|$\)\@="
+syn match freebasicLineNumber "^\s*\d\+\>"
+
+" ------------------------------------------------------------------- sync
+" Block comments and long procedures need more than a screenful of context.
+syn sync minlines=100
+
+" -------------------------------------------------------------- highlight
+hi def link freebasicArrays           StorageClass
+hi def link freebasicBitManipulation  Operator
+hi def link freebasicBoolean          Boolean
+hi def link freebasicComment          Comment
+hi def link freebasicCompilerSwitches PreCondit
+hi def link freebasicConditional      Conditional
+hi def link freebasicConsole          Special
+hi def link freebasicDataTypes        Type
+hi def link freebasicDateTime         Function
+hi def link freebasicDebug            Special
+hi def link freebasicErrorHandling    Exception
+hi def link freebasicFilenumber       Number
+hi def link freebasicFiles            Special
+hi def link freebasicFloat            Float
+hi def link freebasicFunctions        Function
+hi def link freebasicGraphics         Function
+hi def link freebasicHardware         Special
+hi def link freebasicHex              Number
+hi def link freebasicOctal            Number
+hi def link freebasicBinary           Number
+hi def link freebasicInclude          Include
+hi def link freebasicInteger          Number
+hi def link freebasicLabel            Label
+hi def link freebasicLineNumber       Label
+hi def link freebasicLogical          Operator
+hi def link freebasicLoops            Repeat
+hi def link freebasicMath             Function
+hi def link freebasicMemory           Function
+hi def link freebasicMisc             Statement
+hi def link freebasicModularizing     Special
+hi def link freebasicMultithreading   Special
+hi def link freebasicNumberError      Error
+hi def link freebasicOOP              StorageClass
+hi def link freebasicOperator         Operator
+hi def link freebasicPointer          Special
+hi def link freebasicPredefined       PreProc
+hi def link freebasicPreProcessor     PreProc
+" freebasicKeyword catches any keyword the manual adds that no category
+" page claims. Currently empty; the generator reports it when it fills.
+hi def link freebasicKeyword          Keyword
+" The $ spellings are only correct in -lang qb and fblite. Link this to
+" WarningMsg if you compile with -lang fb and want them flagged.
+hi def link freebasicQBSuffix         String
+hi def link freebasicProgramFlow      Statement
+hi def link freebasicShell            Special
+hi def link freebasicSpecial          SpecialChar
+hi def link freebasicString           String
+hi def link freebasicTodo             Todo
+hi def link freebasicTypeCasting      Type
+hi def link freebasicUserInput        Statement
+
+" b:current_syntax must be set LAST. The previous version set it on line 9,
+" before defining any rules, which defeats the guard at the top of the file
+" and breaks ':syn include' of this file from another syntax script.
+let b:current_syntax = "freebasic"

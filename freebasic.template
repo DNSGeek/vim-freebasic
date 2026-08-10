@@ -1,0 +1,148 @@
+" Vim syntax file
+" Language:     FreeBASIC
+" Maintainer:   Thomas Knox
+" Last Change:  2026 Aug 09
+"
+" Generated:    by scripts/generateFreebasicSyntax.js - do not edit by hand
+" Source:      FreeBASIC Manual (wiki export, 2023-12-24), @@COUNT@@ keywords
+" Vocabulary is taken from the manual KeyPg pages and grouped by its own
+" CatPg category pages, so no invented keywords can appear here.
+
+if exists("b:current_syntax")
+  finish
+endif
+
+syn case ignore
+
+" FreeBASIC keeps the QB type suffixes ($ % ! # &) on the classic string
+" functions, so LEFT$ and MID$ must be single syntax words. 'syn iskeyword'
+" scopes this to syntax matching, leaving 'w' motions and the user's own
+" 'iskeyword' alone.
+if has('patch-7.4.1142')
+  syn iskeyword @,48-57,_,36
+else
+  setlocal iskeyword+=36
+endif
+
+" ---------------------------------------------------------------- comments
+" FreeBASIC has three comment forms: ' to end of line, REM to end of line,
+" and the /' ... '/ block comment, which nests.
+syn keyword freebasicTodo contained TODO FIXME XXX NOTE HACK
+
+syn match  freebasicComment "'.*$" contains=freebasicTodo
+syn match  freebasicComment "\<rem\>.*$" contains=freebasicTodo
+syn region freebasicComment start="/'" end="'/" contains=freebasicTodo,freebasicComment
+
+" ---------------------------------------------------------------- strings
+" A quote inside a string is written "" unless -lang allows escapes, in which
+" case a leading ! enables backslash escapes.
+syn match  freebasicSpecial contained +\\\%(\x\+\|&h\x\+\|[0-7]\+\|[abefnrtv\\"'?]\)+
+syn region freebasicString start=+!\="+ skip=+""+ end=+"+ oneline
+  \ contains=freebasicSpecial,freebasicTodo
+
+" ---------------------------------------------------------------- numbers
+" Radix prefixes, with an error variant for out-of-range digits. The error
+" rules are defined after the valid ones so they win at the same position.
+syn match freebasicHex     "&[hH]\x\+\%(u\|l\|ul\|ll\|ull\)\=\>"
+syn match freebasicOctal   "&[oO][0-7]\+\%(u\|l\|ul\|ll\|ull\)\=\>"
+syn match freebasicBinary  "&[bB][01]\+\%(u\|l\|ul\|ll\|ull\)\=\>"
+syn match freebasicNumberError "&[hH]\x*[g-zG-Z]\+"
+syn match freebasicNumberError "&[oO][0-7]*[89a-zA-Z]\+"
+syn match freebasicNumberError "&[bB][01]*[2-9a-zA-Z]\+"
+
+syn match freebasicInteger "\<\d\+\%(u\|l\|ul\|ll\|ull\)\=\>"
+syn match freebasicFloat   "\<\d\+\.\d*\%([eEdD][-+]\=\d\+\)\=[fFdD]\="
+syn match freebasicFloat   "\.\d\+\%([eEdD][-+]\=\d\+\)\=[fFdD]\=\>"
+syn match freebasicFloat   "\<\d\+[eEdD][-+]\=\d\+[fFdD]\=\>"
+
+" A file number as used by OPEN, PRINT #, GET # and friends.
+syn match freebasicFilenumber "#\d\+"
+
+" ----------------------------------------------------------- preprocessor
+" '\<' asserts a boundary before a word character, so it can never precede
+" '#' or '$'. These rules anchor on optional leading whitespace instead.
+syn match freebasicInclude "^\s*#\s*\%(include\|inclib\)\>"
+syn match freebasicInclude "^\s*\$\s*\%(include\|inclib\|lang\)\>"
+
+syn match freebasicPreProcessor "^\s*#\s*\%(define\|undef\|macro\|endmacro\)\>"
+syn match freebasicPreProcessor "^\s*#\s*\%(if\|ifdef\|ifndef\|elseif\|else\|endif\)\>"
+syn match freebasicPreProcessor "^\s*#\s*\%(error\|print\|assert\)\>"
+syn match freebasicPreProcessor "^\s*#\s*\%(lang\|libpath\|pragma\|cmdline\)\>"
+syn match freebasicPreProcessor "^\s*#\s*\%(dynamic\|static\|once\)\>"
+
+
+@@KEYWORDS@@
+
+" ------------------------------------------------------------- operators
+syn match freebasicOperator "[-+*/\\\\^<>=&]"
+syn match freebasicOperator "[<>]="
+syn match freebasicOperator "<>"
+syn match freebasicOperator "\\%(+\\|-\\|\\*\\|/\\|\\\\\\|\\^\\|&\\)="
+
+" ------------------------------------------------------------------ labels
+" A label is a bare identifier followed by a colon at the start of a line,
+" or a line number. The previous pattern was "\<^\w+:\>", which cannot match:
+" \< before ^ is meaningless and \w+ is a word character then a literal plus.
+syn match freebasicLabel      "^\s*\w\+\s*:\%([^=]\|$\)\@="
+syn match freebasicLineNumber "^\s*\d\+\>"
+
+" ------------------------------------------------------------------- sync
+" Block comments and long procedures need more than a screenful of context.
+syn sync minlines=100
+
+" -------------------------------------------------------------- highlight
+hi def link freebasicArrays           StorageClass
+hi def link freebasicBitManipulation  Operator
+hi def link freebasicBoolean          Boolean
+hi def link freebasicComment          Comment
+hi def link freebasicCompilerSwitches PreCondit
+hi def link freebasicConditional      Conditional
+hi def link freebasicConsole          Special
+hi def link freebasicDataTypes        Type
+hi def link freebasicDateTime         Function
+hi def link freebasicDebug            Special
+hi def link freebasicErrorHandling    Exception
+hi def link freebasicFilenumber       Number
+hi def link freebasicFiles            Special
+hi def link freebasicFloat            Float
+hi def link freebasicFunctions        Function
+hi def link freebasicGraphics         Function
+hi def link freebasicHardware         Special
+hi def link freebasicHex              Number
+hi def link freebasicOctal            Number
+hi def link freebasicBinary           Number
+hi def link freebasicInclude          Include
+hi def link freebasicInteger          Number
+hi def link freebasicLabel            Label
+hi def link freebasicLineNumber       Label
+hi def link freebasicLogical          Operator
+hi def link freebasicLoops            Repeat
+hi def link freebasicMath             Function
+hi def link freebasicMemory           Function
+hi def link freebasicMisc             Statement
+hi def link freebasicModularizing     Special
+hi def link freebasicMultithreading   Special
+hi def link freebasicNumberError      Error
+hi def link freebasicOOP              StorageClass
+hi def link freebasicOperator         Operator
+hi def link freebasicPointer          Special
+hi def link freebasicPredefined       PreProc
+hi def link freebasicPreProcessor     PreProc
+" freebasicKeyword catches any keyword the manual adds that no category
+" page claims. Currently empty; the generator reports it when it fills.
+hi def link freebasicKeyword          Keyword
+" The $ spellings are only correct in -lang qb and fblite. Link this to
+" WarningMsg if you compile with -lang fb and want them flagged.
+hi def link freebasicQBSuffix         String
+hi def link freebasicProgramFlow      Statement
+hi def link freebasicShell            Special
+hi def link freebasicSpecial          SpecialChar
+hi def link freebasicString           String
+hi def link freebasicTodo             Todo
+hi def link freebasicTypeCasting      Type
+hi def link freebasicUserInput        Statement
+
+" b:current_syntax must be set LAST. The previous version set it on line 9,
+" before defining any rules, which defeats the guard at the top of the file
+" and breaks ':syn include' of this file from another syntax script.
+let b:current_syntax = "freebasic"
